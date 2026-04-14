@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react
 
 interface RadialLinesCanvasProps {
   lineColor: string;
+  midColor: string;
   gradientColor: string;
   bgColor: string;
   density: number;
@@ -13,6 +14,9 @@ interface RadialLinesCanvasProps {
   originY: number;
   angleSpread: number;
   angleRotation: number;
+  gravity: number;
+  enableFlow: boolean;
+  flowColor: string;
   isTransparent: boolean;
   globalOpacity: number;
   isPaused: boolean;
@@ -25,6 +29,7 @@ export interface CanvasHandle {
 
 const RadialLinesCanvas = forwardRef<CanvasHandle, RadialLinesCanvasProps>(({
   lineColor,
+  midColor,
   gradientColor,
   bgColor,
   density,
@@ -36,6 +41,9 @@ const RadialLinesCanvas = forwardRef<CanvasHandle, RadialLinesCanvasProps>(({
   originY,
   angleSpread,
   angleRotation,
+  gravity,
+  enableFlow,
+  flowColor,
   isTransparent,
   globalOpacity,
   isPaused
@@ -152,6 +160,19 @@ const RadialLinesCanvas = forwardRef<CanvasHandle, RadialLinesCanvasProps>(({
         ctx.fill();
       }
 
+      // Parse flowColor to RGB for transparent gradient stops
+      let flowR = 255, flowG = 255, flowB = 255;
+      if (flowColor.startsWith('#')) {
+        const hex = flowColor.replace('#', '');
+        if (hex.length === 6) {
+          flowR = parseInt(hex.substring(0, 2), 16);
+          flowG = parseInt(hex.substring(2, 4), 16);
+          flowB = parseInt(hex.substring(4, 6), 16);
+        }
+      }
+      const flowColorTransparent = `rgba(${flowR}, ${flowG}, ${flowB}, 0)`;
+      const flowColorSolid = `rgba(${flowR}, ${flowG}, ${flowB}, 1)`;
+
       particlesRef.current.forEach((p) => {
         if (!isPaused) {
           p.currentLength += p.speed;
@@ -163,24 +184,86 @@ const RadialLinesCanvas = forwardRef<CanvasHandle, RadialLinesCanvasProps>(({
         // All lines strictly start from the center point
         const x1 = centerX;
         const y1 = centerY;
+        
+        // Current path calculations
+        const droop = gravity * Math.pow(p.currentLength / 100, 2);
         const x2 = centerX + Math.cos(p.angle) * p.currentLength;
-        const y2 = centerY + Math.sin(p.angle) * p.currentLength;
+        const y2 = centerY + Math.sin(p.angle) * p.currentLength + droop;
+
+        // Control point for the quadratic bezier curve
+        const cx = centerX + Math.cos(p.angle) * p.currentLength * 0.5;
+        const cy = centerY + Math.sin(p.angle) * p.currentLength * 0.5;
 
         const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
         gradient.addColorStop(0, lineColor);
+        gradient.addColorStop(0.5, midColor);
         gradient.addColorStop(1, gradientColor);
 
+        const alpha = p.opacity * globalOpacity;
+
+        // 1. Draw original growing line (The Wire)
         ctx.beginPath();
         ctx.strokeStyle = gradient;
-        // Subtle fade towards the end, but keep it connected
-        const alpha = p.opacity * globalOpacity;
         ctx.globalAlpha = alpha;
         ctx.lineWidth = lineWidth;
+        ctx.lineCap = 'round';
         ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
+        ctx.quadraticCurveTo(cx, cy, x2, y2);
         ctx.stroke();
 
-        // Particle at the end - ensure it's perfectly aligned and connected
+        // 2. Draw flow inside the line (The Electricity)
+        if (enableFlow) {
+          const time = performance.now() / 1000;
+          const flowSpeed = 200 * p.speed; // Speed of the electricity
+          const pulseLength = 120; // Length of the flow pulse
+          
+          // Total cycle includes the line length, the pulse length (to fully exit), and a pause
+          const totalCycleDistance = p.currentLength + pulseLength * 2 + 200; 
+          
+          // distanceTraveled loops from 0 to totalCycleDistance
+          // Math.abs(p.angle * 10000) provides a random phase offset per line
+          const distanceTraveled = (time * flowSpeed + Math.abs(p.angle * 10000)) % totalCycleDistance;
+          
+          // Shift so the pulse starts completely behind the origin
+          const dCenter = distanceTraveled - pulseLength; 
+          const dStart = dCenter - pulseLength / 2;
+          const dEnd = dCenter + pulseLength / 2;
+          
+          // Calculate gradient coordinates along the curve's trajectory
+          const droopStart = gravity * Math.pow(Math.max(0, dStart) / 100, 2);
+          const gx1 = centerX + Math.cos(p.angle) * dStart;
+          const gy1 = centerY + Math.sin(p.angle) * dStart + droopStart;
+          
+          const droopEnd = gravity * Math.pow(Math.max(0, dEnd) / 100, 2);
+          const gx2 = centerX + Math.cos(p.angle) * dEnd;
+          const gy2 = centerY + Math.sin(p.angle) * dEnd + droopEnd;
+          
+          // Only draw if gradient points are distinct
+          if (Math.abs(gx1 - gx2) > 0.1 || Math.abs(gy1 - gy2) > 0.1) {
+            const flowGradient = ctx.createLinearGradient(gx1, gy1, gx2, gy2);
+            flowGradient.addColorStop(0, flowColorTransparent);
+            flowGradient.addColorStop(0.5, flowColorSolid);
+            flowGradient.addColorStop(1, flowColorTransparent);
+            
+            ctx.beginPath();
+            ctx.strokeStyle = flowGradient;
+            ctx.globalAlpha = Math.min(1, alpha * 1.5);
+            ctx.lineWidth = Math.max(1, lineWidth * 0.8);
+            ctx.lineCap = 'round';
+            
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = flowColor;
+            
+            // Draw the exact same curve, but the gradient will mask it to only show the pulse
+            ctx.moveTo(x1, y1);
+            ctx.quadraticCurveTo(cx, cy, x2, y2);
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0;
+          }
+        }
+
+        // 3. Particle at the end
         if (particleSize > 0) {
           ctx.beginPath();
           ctx.fillStyle = gradientColor;
@@ -189,7 +272,7 @@ const RadialLinesCanvas = forwardRef<CanvasHandle, RadialLinesCanvasProps>(({
           ctx.fill();
         }
 
-        // Optional: Small dot at the origin to anchor the line visually
+        // 4. Origin dot
         ctx.beginPath();
         ctx.fillStyle = lineColor;
         ctx.globalAlpha = alpha * 0.5;
@@ -219,7 +302,7 @@ const RadialLinesCanvas = forwardRef<CanvasHandle, RadialLinesCanvasProps>(({
       window.removeEventListener('resize', handleResize);
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [lineColor, gradientColor, bgColor, density, particleSize, lineLength, lineWidth, speed, originX, originY, angleSpread, angleRotation, isTransparent, globalOpacity, isPaused]);
+  }, [lineColor, midColor, gradientColor, bgColor, density, particleSize, lineLength, lineWidth, speed, originX, originY, angleSpread, angleRotation, gravity, enableFlow, flowColor, isTransparent, globalOpacity, isPaused]);
 
   return (
     <canvas

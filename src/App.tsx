@@ -10,7 +10,10 @@ import ControlPanel from './components/ControlPanel';
 
 export default function App() {
   const [lineColor, setLineColor] = useState('#00f2ff');
+  const [midColor, setMidColor] = useState('#8b5cf6');
   const [gradientColor, setGradientColor] = useState('#3b82f6');
+  const [flowColor, setFlowColor] = useState('#ffffff');
+  const [enableFlow, setEnableFlow] = useState(true);
   const [bgColor, setBgColor] = useState('#000000');
   const [density, setDensity] = useState(2.0);
   const [particleSize, setParticleSize] = useState(1.5);
@@ -21,6 +24,7 @@ export default function App() {
   const [originY, setOriginY] = useState(100);
   const [angleSpread, setAngleSpread] = useState(160);
   const [angleRotation, setAngleRotation] = useState(270);
+  const [gravity, setGravity] = useState(0.5);
   const [isTransparent, setIsTransparent] = useState(false);
   const [globalOpacity, setGlobalOpacity] = useState(0.9);
   const [isPaused, setIsPaused] = useState(false);
@@ -40,6 +44,7 @@ export default function App() {
       <RadialLinesCanvas
         ref={canvasRef}
         lineColor={lineColor}
+        midColor={midColor}
         gradientColor={gradientColor}
         bgColor={bgColor}
         density={density}
@@ -51,6 +56,9 @@ export default function App() {
         originY={originY}
         angleSpread={angleSpread}
         angleRotation={angleRotation}
+        gravity={gravity}
+        enableFlow={enableFlow}
+        flowColor={flowColor}
         isTransparent={isTransparent}
         globalOpacity={globalOpacity}
         isPaused={isPaused}
@@ -59,8 +67,14 @@ export default function App() {
       <ControlPanel
         lineColor={lineColor}
         setLineColor={setLineColor}
+        midColor={midColor}
+        setMidColor={setMidColor}
         gradientColor={gradientColor}
         setGradientColor={setGradientColor}
+        flowColor={flowColor}
+        setFlowColor={setFlowColor}
+        enableFlow={enableFlow}
+        setEnableFlow={setEnableFlow}
         bgColor={bgColor}
         setBgColor={setBgColor}
         density={density}
@@ -81,6 +95,8 @@ export default function App() {
         setAngleSpread={setAngleSpread}
         angleRotation={angleRotation}
         setAngleRotation={setAngleRotation}
+        gravity={gravity}
+        setGravity={setGravity}
         isTransparent={isTransparent}
         setIsTransparent={setIsTransparent}
         globalOpacity={globalOpacity}

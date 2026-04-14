@@ -5,8 +5,14 @@ import { Download, Play, Pause, Settings2, X } from 'lucide-react';
 interface ControlPanelProps {
   lineColor: string;
   setLineColor: (val: string) => void;
+  midColor: string;
+  setMidColor: (val: string) => void;
   gradientColor: string;
   setGradientColor: (val: string) => void;
+  flowColor: string;
+  setFlowColor: (val: string) => void;
+  enableFlow: boolean;
+  setEnableFlow: (val: boolean) => void;
   bgColor: string;
   setBgColor: (val: string) => void;
   density: number;
@@ -27,6 +33,8 @@ interface ControlPanelProps {
   setAngleSpread: (val: number) => void;
   angleRotation: number;
   setAngleRotation: (val: number) => void;
+  gravity: number;
+  setGravity: (val: number) => void;
   isTransparent: boolean;
   setIsTransparent: (val: boolean) => void;
   globalOpacity: number;
@@ -39,7 +47,10 @@ interface ControlPanelProps {
 
 const ControlPanel: React.FC<ControlPanelProps> = ({
   lineColor, setLineColor,
+  midColor, setMidColor,
   gradientColor, setGradientColor,
+  flowColor, setFlowColor,
+  enableFlow, setEnableFlow,
   bgColor, setBgColor,
   density, setDensity,
   particleSize, setParticleSize,
@@ -50,6 +61,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   originY, setOriginY,
   angleSpread, setAngleSpread,
   angleRotation, setAngleRotation,
+  gravity, setGravity,
   isTransparent, setIsTransparent,
   globalOpacity, setGlobalOpacity,
   isPaused, setIsPaused,
@@ -94,6 +106,15 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                 />
               </div>
               <div className="flex items-center justify-between">
+                <span className="text-sm">Line Mid</span>
+                <input 
+                  type="color" 
+                  value={midColor} 
+                  onChange={(e) => setMidColor(e.target.value)}
+                  className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-none"
+                />
+              </div>
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Line End</span>
                 <input 
                   type="color" 
@@ -101,6 +122,27 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                   onChange={(e) => setGradientColor(e.target.value)}
                   className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-none"
                 />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Flow Light</span>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={enableFlow} 
+                      onChange={(e) => setEnableFlow(e.target.checked)}
+                      className="w-4 h-4 rounded border-white/20 bg-white/10"
+                    />
+                    <span className="text-xs opacity-70">Enable</span>
+                  </label>
+                  <input 
+                    type="color" 
+                    value={flowColor} 
+                    disabled={!enableFlow}
+                    onChange={(e) => setFlowColor(e.target.value)}
+                    className={`w-10 h-10 rounded-lg cursor-pointer bg-transparent border-none ${!enableFlow ? 'opacity-30 grayscale' : ''}`}
+                  />
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">Background</span>
@@ -218,7 +260,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                   <span className="opacity-50">{lineLength}px</span>
                 </div>
                 <input 
-                  type="range" min="10" max="1000" step="10"
+                  type="range" min="10" max="3000" step="10"
                   value={lineLength} onChange={(e) => setLineLength(parseInt(e.target.value))}
                   className="w-full accent-white"
                 />
@@ -242,6 +284,17 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                 <input 
                   type="range" min="0.1" max="5" step="0.1"
                   value={speed} onChange={(e) => setSpeed(parseFloat(e.target.value))}
+                  className="w-full accent-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Gravity (Droop)</span>
+                  <span className="opacity-50">{gravity.toFixed(1)}</span>
+                </div>
+                <input 
+                  type="range" min="0" max="5" step="0.1"
+                  value={gravity} onChange={(e) => setGravity(parseFloat(e.target.value))}
                   className="w-full accent-white"
                 />
               </div>
