@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef } from 'react';
+import { Dribbble } from 'lucide-react';
 import RadialLinesCanvas, { CanvasHandle } from './components/RadialLinesCanvas';
 import ControlPanel from './components/ControlPanel';
 
@@ -92,6 +93,17 @@ export default function App() {
 
       {/* Subtle overlay for depth */}
       <div className="fixed inset-0 pointer-events-none bg-radial-gradient from-transparent to-black/20" />
+
+      {/* Designer Credit */}
+      <a
+        href="https://dribbble.com/Lionel"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-white/60 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-300 group"
+      >
+        <span className="text-xs font-medium tracking-widest uppercase">By Lionel</span>
+        <Dribbble size={14} className="group-hover:text-[#ea4c89] transition-colors duration-300" />
+      </a>
     </div>
   );
 }
